@@ -1,4 +1,4 @@
-version: '3.5'
+version: '3.2'
 
 services:
   traefik:
@@ -6,7 +6,10 @@ services:
     container_name: traefik
     depends_on:
       - dockersock-proxy
-    command: --api --acme.email=${ACME_EMAIL} --docker.domain=traefik.${DOMAIN_BASE}
+    command: 
+      - "--api"
+      - "--certificatesResolvers.default.acme.email=${ACME_EMAIL}"
+      - "--providers.docker.defaultrule="Host(`{{ trimSuffix `_config` .Name }}.${DOMAIN_BASE}`)""
     networks:
       - web
       - default
@@ -17,17 +20,24 @@ services:
     labels:
       - "traefik.docker.network=web"
       - "traefik.enable=true"
-      - "traefik.backend=traefik"
-      - "traefik.frontend.rule=Host:traefik.${DOMAIN_BASE}"
-      - "traefik.port=8080"
+      - "traefik.http.middlewares.traefikauth.basicauth.usersfile=/traefik.htpasswd"
+      - "traefik.http.middlewares.redirectscheme.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.redirectscheme.redirectscheme.permanent=true"
+      - "traefik.http.routers.traefik.entrypoints=http"
+      - "traefik.http.routers.traefik-secured.entrypoints=https"
+      - "traefik.http.routers.traefik-secured.tls=true"
+      - "traefik.http.routers.traefik.middlewares=redirectscheme@docker"
+      - "traefik.http.routers.traefik-secured.middlewares=traefikauth@docker"
+      - "traefik.http.services.traefik.loadbalancer.server.port=8080"
       - "com.centurylinklabs.watchtower.enable=true"
     volumes:
       - ${PERSISTENT_DIR}/traefik/traefik.toml:/traefik.toml
       - ${PERSISTENT_DIR}/traefik/acme.json:/acme.json
       - ${PERSISTENT_DIR}/traefik/traefik.htpasswd:/traefik.htpasswd
       - ${PERSISTENT_DIR}/traefik/log:/var/log
+      - /var/run/docker.sock:/var/run/docker.sock
     restart: unless-stopped
-
+    
   dockersock-proxy:
     image: tecnativa/docker-socket-proxy:latest
     container_name: dockersock-proxy
@@ -73,5 +83,3 @@ networks:
   dockersock-traefik-proxy:
   default:
     driver: bridge
-
-# vim: tabstop=2 shiftwidth=2 expandtab
