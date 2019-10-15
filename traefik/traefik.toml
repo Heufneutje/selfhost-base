@@ -1,47 +1,43 @@
-#debug = true
-logLevel = "ERROR"
-
-checkNewVersion = true
-defaultEntryPoints = ["https","http"]
+[global]
+  checkNewVersion = true
+  sendAnonymousUsage = true
 
 [entryPoints]
   [entryPoints.http]
     address = ":80"
-    [entryPoints.http.redirect]
-      entryPoint = "https"
-      permanent = true
   [entryPoints.https]
     address = ":443"
-    compress = true
-    [entryPoints.https.tls]
   [entryPoints.traefik]
     address = ":8080"
-    compress = true
-    [entryPoints.traefik.auth.basic]
-      usersFile = "/traefik.htpasswd"
+
+[providers]
+  providersThrottleDuration = "2s"
+  [providers.docker]
+    watch = true
+    endpoint = "tcp://dockersock-proxy:2375"
+    exposedByDefault = false
 
 [api]
-  entryPoint = "traefik"
+  insecure = true
   dashboard = true
+
+[log]
+  filePath = "/var/log/traefik.log"
+  level = "ERROR"
 
 [accessLog]
   filePath = "/var/log/access.log"
+  bufferingSize = 0
   [accessLog.filters]
     statusCodes = ["400-499"]
-[retry]
+    minDuration = "0s"
 
-[docker]
-  endpoint = "tcp://dockersock-proxy:2375"
-  #domain = ""  # set from docker-compose.yml
-  watch = true
-  exposedByDefault = false
-
-[acme]
-  #email = ""  # set from docker-compose.yml
-  storage = "acme.json"
-  entryPoint = "https"
-  onHostRule = true
-  [acme.httpChallenge]
-    entryPoint = "http"
+[certificatesResolvers]
+  [certificatesResolvers.default]
+    [certificatesResolvers.default.acme]
+      storage = "acme.json"
+      #email = "" # set from docker-compose.yml
+      [certificatesResolvers.default.acme.httpChallenge]
+        entryPoint = "http"
 
 # vim: tabstop=2 shiftwidth=2 expandtab
