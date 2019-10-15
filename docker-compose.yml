@@ -9,7 +9,7 @@ services:
     command: 
       - "--api"
       - "--certificatesResolvers.default.acme.email=${ACME_EMAIL}"
-      - "--providers.docker.defaultrule="Host(`{{ trimSuffix `_config` .Name }}.${DOMAIN_BASE}`)""
+      - "--providers.docker.defaultrule=Host(`{{ trimSuffix `_config` .Name }}.${DOMAIN_BASE}`)"
     networks:
       - web
       - default
